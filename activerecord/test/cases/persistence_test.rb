@@ -895,6 +895,22 @@ class PersistenceTest < ActiveRecord::TestCase
     assert_raise(RuntimeError) { client.name = "something else" }
   end
 
+  def test_destroy_after_transaction_rollback
+    require 'debug' ;debugger
+    # Regression test for #50338
+    topic = Topic.create!
+    assert_difference("Topic.count", -1) do
+      begin
+        ActiveRecord::Base.transaction do
+          topic.destroy
+          raise StandardError.new
+        end
+      rescue
+        topic.destroy
+      end
+    end
+  end
+
   def test_delete_record_with_associations
     client = Client.find(3)
     client.delete
